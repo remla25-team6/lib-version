@@ -29,7 +29,7 @@ public class VersionUtil {
      */
     public static String findVersion() {
         Properties props = new Properties();
-        try (InputStream input = VersionUtil.class.getClassLoader().getResourceAsStream("version.properties")) {
+        try (InputStream input = VersionUtil.class.getClassLoader().getResourceAsStream(PROPERTIES)) {
             if (input == null) {
                 return null;
             }
