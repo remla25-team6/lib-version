@@ -48,4 +48,4 @@ jobs:
           sed -i "s|<password>.*</password>|<password>${{ secrets.GH_PAT }}</password>|" ~/.m2/settings.xml
 
       - name: Deploy to GitHub Packages
-        run: mvn deploy -DskipTests -DdryRun=true
+        run: mvn deploy -DskipTests
