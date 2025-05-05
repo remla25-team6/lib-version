@@ -36,6 +36,13 @@ jobs:
           git config user.email "github-actions@github.com"
           git commit -am "Update version to ${VERSION#v}"
           git push
+          
+      - name: Move tag to latest commit
+        run: |
+          git tag -d ${VERSION}
+          git push origin :refs/tags/${VERSION}
+          git tag ${VERSION}
+          git push origin ${VERSION}
 
       - name: Copy Maven settings.xml
         run: |
