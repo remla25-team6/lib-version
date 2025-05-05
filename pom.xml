@@ -6,7 +6,7 @@
 
     <groupId>org.remla25team6</groupId>
     <artifactId>lib-version</artifactId>
-    <version>1.0.SNAPSHOT</version>
+    <version>1.0.0TEST2</version>
 
     <name>lib-version</name>
     <description>A version-aware library</description>
