@@ -14,7 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          ref: main
+          ref: prerelease
           fetch-depth: 0
 
       - name: Set up JDK
@@ -44,8 +44,8 @@ jobs:
 
       - name: Inject GitHub credentials
         run: |
-          sed -i "s|<username>.*</username>|<username>sten-vw</username>|" ~/.m2/settings.xml
-          sed -i "s|<password>.*</password>|<password>${{ secrets.GH_PAT }}</password>|" ~/.m2/settings.xml
+          sed -i "s|<username>.*</username>|<username>${{ github.actor }}</username>|" ~/.m2/settings.xml
+          sed -i "s|<password>.*</password>|<password>${{ secrets.GITHUB_TOKEN }}</password>|" ~/.m2/settings.xml
 
       - name: Deploy to GitHub Packages
         run: mvn deploy -DskipTests
