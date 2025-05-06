@@ -31,7 +31,7 @@ jobs:
           PATCH=$((PATCH + 1))
           DATETIME=$(date +%Y%m%d.%H%M%S)
           NEW_VERSION="$MAJOR.$MINOR.$PATCH-pre.$DATETIME"
-          echo "version=$NEW_VERSION"  >> $GITHUB_ENV
+          echo "VERSION=$NEW_VERSION"  >> $GITHUB_ENV
 
       - name: Set up JDK
         uses: actions/setup-java@v3
