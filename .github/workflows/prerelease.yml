@@ -1,0 +1,76 @@
+name: Pre-release
+
+on:
+  push:
+    branches:
+      prerelease
+
+
+jobs:
+  prerelease:
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get latest tag
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_ENV
+
+      - name: Calculate pre-release version
+        run: |
+          VERSION=${latest_tag#v}
+          MAJOR=$(echo "$VERSION" | cut -d . -f 1)
+          MINOR=$(echo "$VERSION" | cut -d . -f 2)
+          PATCH=$(echo "$VERSION" | cut -d . -f 3)
+          PATCH=$((PATCH + 1))
+          DATETIME=$(date +%Y%m%d.%H%M%S)
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH-pre.$DATETIME"
+          echo "version=$NEW_VERSION"  >> $GITHUB_ENV
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '16'
+          distribution: 'temurin'
+
+      - name: Set version in pom.xml
+        run: mvn versions:set -DnewVersion=${VERSION} -DgenerateBackupPoms=false
+
+      - name: Commit updated pom.xml
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git commit -am "Update version to ${VERSION}"
+          git push
+
+      - name: Copy Maven settings.xml
+        run: |
+          mkdir -p ~/.m2
+          cp .github/maven/settings.xml ~/.m2/settings.xml
+
+      - name: Inject GitHub credentials
+        run: |
+          sed -i "s|<username>.*</username>|<username>${{ github.actor }}</username>|" ~/.m2/settings.xml
+          sed -i "s|<password>.*</password>|<password>${{ secrets.GITHUB_TOKEN }}</password>|" ~/.m2/settings.xml
+
+      - name: Deploy to GitHub Packages
+        run: mvn deploy -DskipTests
+
+      - name: Tag pre-release commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag v${{ env.version }}
+          git push origin v${{ env.version }}
+
+      - name: Create GitHub pre-release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ env.version }}
+          prerelease: true
