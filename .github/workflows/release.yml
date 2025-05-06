@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
@@ -37,6 +37,13 @@ jobs:
           git commit -am "Update version to ${VERSION#v}"
           git push
 
+      - name: Move tag to latest commit
+        run: |
+          git tag -d ${VERSION}
+          git push origin :refs/tags/${VERSION}
+          git tag ${VERSION}
+          git push origin ${VERSION}
+
       - name: Copy Maven settings.xml
         run: |
           mkdir -p ~/.m2
@@ -44,8 +51,13 @@ jobs:
 
       - name: Inject GitHub credentials
         run: |
-          sed -i "s|<username>.*</username>|<username>sten-vw</username>|" ~/.m2/settings.xml
-          sed -i "s|<password>.*</password>|<password>${{ secrets.GH_PAT }}</password>|" ~/.m2/settings.xml
+          sed -i "s|<username>.*</username>|<username>${{ github.actor }}</username>|" ~/.m2/settings.xml
+          sed -i "s|<password>.*</password>|<password>${{ secrets.GITHUB_TOKEN }}</password>|" ~/.m2/settings.xml
 
       - name: Deploy to GitHub Packages
         run: mvn deploy -DskipTests
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.VERSION }}
