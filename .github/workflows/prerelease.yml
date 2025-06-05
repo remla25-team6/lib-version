@@ -56,9 +56,11 @@ jobs:
           distribution: 'temurin'
 
       - name: Set version in pom.xml
+        if: steps.trigger.outputs.triggered_by == 'branch'
         run: mvn versions:set -DnewVersion=${version} -DgenerateBackupPoms=false
 
       - name: Commit updated pom.xml
+        if: steps.trigger.outputs.triggered_by == 'branch'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
