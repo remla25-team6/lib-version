@@ -4,6 +4,7 @@ on:
   push:
     branches:
       main
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
 
 
 jobs:
@@ -16,9 +17,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get latest tag
+      - name: Determine trigger type
+        id: trigger
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "triggered_by=tag" >> $GITHUB_OUTPUT
+          else
+            echo "triggered_by=branch" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get latest tag from history
+        if: steps.trigger.outputs.triggered_by == 'branch'
         run: |
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_ENV
+
+      - name: Get latest tag from pushed tag
+        if: steps.trigger.outputs.triggered_by == 'tag'
+        run: |
+          LATEST_TAG=${GITHUB_REF:11}
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_ENV
 
       - name: Calculate pre-release version
@@ -27,7 +44,9 @@ jobs:
           MAJOR=$(echo "$VERSION" | cut -d . -f 1)
           MINOR=$(echo "$VERSION" | cut -d . -f 2)
           PATCH=$(echo "$VERSION" | cut -d . -f 3)
-          PATCH=$((PATCH + 1))
+          if [[ "${{ steps.trigger.outputs.triggered_by }}" == "tag" ]]; then
+            PATCH=$((PATCH + 1))
+          fi
           DATETIME=$(date +%Y%m%d.%H%M%S)
           NEW_VERSION="$MAJOR.$MINOR.$PATCH-pre.$DATETIME"
           echo "version=$NEW_VERSION"  >> $GITHUB_ENV
@@ -39,33 +58,42 @@ jobs:
           distribution: 'temurin'
 
       - name: Set version in pom.xml
+        if: steps.trigger.outputs.triggered_by == 'branch'
         run: mvn versions:set -DnewVersion=${version} -DgenerateBackupPoms=false
 
       - name: Commit updated pom.xml
+        if: steps.trigger.outputs.triggered_by == 'branch'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git commit -am "Update version to ${version}"
-          git push
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
 
       - name: Copy Maven settings.xml
+        if: steps.trigger.outputs.triggered_by == 'branch'
         run: |
           mkdir -p ~/.m2
           cp .github/maven/settings.xml ~/.m2/settings.xml
 
       - name: Inject GitHub credentials
+        if: steps.trigger.outputs.triggered_by == 'branch'
         run: |
           sed -i "s|<username>.*</username>|<username>${{ github.actor }}</username>|" ~/.m2/settings.xml
           sed -i "s|<password>.*</password>|<password>${{ secrets.GITHUB_TOKEN }}</password>|" ~/.m2/settings.xml
 
       - name: Deploy to GitHub Packages
+        if: steps.trigger.outputs.triggered_by == 'branch'
         run: mvn deploy -DskipTests
 
       - name: Tag pre-release commit
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git tag v${{ env.version }}
+          git fetch origin main
+          MAIN_SHA=$(git rev-parse origin/main)
+          git tag v${{ env.version }} $MAIN_SHA
           git push origin v${{ env.version }}
 
       - name: Create GitHub pre-release
