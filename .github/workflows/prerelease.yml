@@ -70,16 +70,19 @@ jobs:
           git push origin HEAD:main
 
       - name: Copy Maven settings.xml
+        if: steps.trigger.outputs.triggered_by == 'branch'
         run: |
           mkdir -p ~/.m2
           cp .github/maven/settings.xml ~/.m2/settings.xml
 
       - name: Inject GitHub credentials
+        if: steps.trigger.outputs.triggered_by == 'branch'
         run: |
           sed -i "s|<username>.*</username>|<username>${{ github.actor }}</username>|" ~/.m2/settings.xml
           sed -i "s|<password>.*</password>|<password>${{ secrets.GITHUB_TOKEN }}</password>|" ~/.m2/settings.xml
 
       - name: Deploy to GitHub Packages
+        if: steps.trigger.outputs.triggered_by == 'branch'
         run: mvn deploy -DskipTests
 
       - name: Tag pre-release commit
