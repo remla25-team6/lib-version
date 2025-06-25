@@ -65,4 +65,4 @@ To publish a pre-release:
 4. The packages are available on GitHub packages.
 
 ## AI Disclaimer
-Used ChatGPT-4o to refine README.
+Used ChatGPT-4o to refine README. Additionally, ChatGPT-4o was used to help generate the `release.yml` file, specifically the logic to authenticate with the Github Packages registry.

@@ -49,6 +49,7 @@ jobs:
           mkdir -p ~/.m2
           cp .github/maven/settings.xml ~/.m2/settings.xml
 
+      # Used ChatGPT-4o to develop the authentication logic
       - name: Inject GitHub credentials
         run: |
           sed -i "s|<username>.*</username>|<username>${{ github.actor }}</username>|" ~/.m2/settings.xml
