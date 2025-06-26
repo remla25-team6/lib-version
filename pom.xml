@@ -6,7 +6,7 @@
 
     <groupId>org.remla25team6</groupId>
     <artifactId>lib-version</artifactId>
-    <version>1.4.0-pre.20250620.160515</version>
+    <version>1.4.0-pre.20250626.171540</version>
 
     <name>lib-version</name>
     <description>A version-aware library</description>
